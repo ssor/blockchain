@@ -6,10 +6,11 @@ import (
 	"github.com/boltdb/bolt"
 	"flag"
 	"os"
+	log "github.com/sirupsen/logrus"
 )
 
 var targetInt uint = 254
-var dbPath = "dbchain.bolt"
+var dbPath = "my.db"
 
 var (
 	printBlocksCmd = flag.NewFlagSet("printchain", flag.ExitOnError)
@@ -20,7 +21,7 @@ var (
 func main() {
 	flag.Parse()
 
-	fmt.Println("hello, blockchain !!!")
+	log.Infof("hello, blockchain !!!")
 	blockchain, db, err := initBlockchain()
 	if err != nil {
 		panic(err)
@@ -65,40 +66,18 @@ func main() {
 
 }
 
-func initBlockchain() (*core.Blockchain, *bolt.DB, error) {
-	db, err := bolt.Open("my.db", 0600, nil)
+func initBlockchain(blockchainCreator string) (*core.Blockchain, *bolt.DB, error) {
+	db, err := bolt.Open(dbPath, 0600, nil)
 	if err != nil {
 		fmt.Printf("open db error: %s \n", err)
 		return nil, nil, err
 	}
 
-	blockchain, err := core.NewBlockchain(targetInt, db)
+	blockchain, err := core.NewBlockchain(targetInt, db, blockchainCreator)
 	if err != nil {
 		fmt.Printf("init block chain error: %s\n", err)
 		return nil, db, err
 	}
-	//err = addTestBlock(blockchain)
-	//if err != nil {
-	//	fmt.Printf("add test block error: %s\n", err)
-	//	return
-	//}
 
 	return blockchain, db, nil
-}
-
-func addTestBlock(blockchain *core.Blockchain) error {
-	fmt.Println("--------------- add block 1 ---------------")
-	err := blockchain.Add([]byte("block 1"))
-	if err != nil {
-		fmt.Printf("add block failed: %s\n", err)
-		return err
-	}
-	fmt.Println("--------------- add block 2 ---------------")
-	err = blockchain.Add([]byte("block 2"))
-	if err != nil {
-		fmt.Printf("add block failed: %s\n", err)
-		return err
-	}
-	fmt.Println("--------------- add block OK ---------------")
-	return nil
 }
