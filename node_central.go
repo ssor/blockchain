@@ -1,12 +1,15 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
 	"flag"
-	"fmt"
+	"github.com/gin-gonic/gin"
 	"blockchain/miner"
+	"fmt"
 )
 
+/*http://book.8btc.com/books/6/masterbitcoin2cn/_book/ch09.html
+https://github.com/Jeiwan/
+*/
 var (
 	flagCentralPort = flag.Int("port", 5001, "listening port")
 	portCentralMin  = 5000
