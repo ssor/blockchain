@@ -1,4 +1,4 @@
-package core
+package corelib
 
 import (
 	"math/big"

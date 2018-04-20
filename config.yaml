@@ -1,0 +1,11 @@
+core:
+    port_min: 5000
+    port_max: 5000
+wallet:
+    port_min: 5010
+    port_max: 5020
+miner:
+    port_min: 5030
+    port_max: 5040
+
+dbpath: mydb.db
