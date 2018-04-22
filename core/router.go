@@ -15,8 +15,21 @@ func initRouter(r *gin.Engine) {
     r.Static("/static", "static")
 }
 
-func StartNode(port int) {
+func NewCoreNode(portFrom, portTo int) *CoreNode {
+    core := &CoreNode{
+        portFrom: portFrom,
+        portTo:   portTo,
+    }
+    return core
+}
+
+type CoreNode struct {
+    portFrom int
+    portTo   int
+}
+
+func (core *CoreNode) Start() {
     r := gin.Default()
     initRouter(r)
-    r.Run(fmt.Sprintf(":%d", port))
+    r.Run(fmt.Sprintf(":%d", core.portFrom))
 }

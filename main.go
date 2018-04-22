@@ -6,19 +6,22 @@ import (
     "gopkg.in/yaml.v2"
     "flag"
     "blockchain/core"
+    log "github.com/sirupsen/logrus"
+    "blockchain/miner"
+    "blockchain/wallet"
 )
 
 var targetInt uint = 254
 //var dbPath = "my.db"
 
 const (
-    nodeTypeCore   = "corelib"
+    nodeTypeCore   = "core"
     nodeTypeWallet = "wallet"
     nodeTypeMiner  = "miner"
 )
 
 var (
-    node = flag.String("core", "corelib", "core type to startup")
+    nodeName = flag.String("node", "core", "core type to startup")
 )
 
 type NodeConfig struct {
@@ -48,32 +51,41 @@ func readConfig() (*Config, error) {
     return &config, nil
 }
 
+type node interface {
+    Start()
+}
+
 func main() {
     flag.Parse()
     if flag.Parsed() == false {
         flag.PrintDefaults()
         return
     }
-    fmt.Println("core: ", *node)
+    log.Info("core: ", *nodeName)
 
     config, err := readConfig()
     if err != nil {
         return
     }
 
-    fmt.Println("db: ", config.Dbpath)
-    switch *node {
+    log.Info("db: ", config.Dbpath)
+    var node node
+    switch *nodeName {
     case nodeTypeCore:
-        fmt.Println("ports: ", config.Core.PortsMin, "-", config.Core.PortsMax)
-        core.StartNode(config.Core.PortsMin)
+        log.Info("ports: ", config.Core.PortsMin, "-", config.Core.PortsMax)
+        node = core.NewCoreNode(config.Core.PortsMin, config.Core.PortsMax)
     case nodeTypeMiner:
-        fmt.Println("ports: ", config.Miner.PortsMin, "-", config.Miner.PortsMax)
+        log.Info("ports: ", config.Miner.PortsMin, "-", config.Miner.PortsMax)
+        node = miner.NewMinerNode(config.Miner.PortsMin, config.Miner.PortsMax)
     case nodeTypeWallet:
-        fmt.Println("ports: ", config.Wallet.PortsMin, "-", config.Wallet.PortsMax)
+        log.Info("ports: ", config.Wallet.PortsMin, "-", config.Wallet.PortsMax)
+        node = wallet.NewWalletNode(config.Wallet.PortsMin)
     default:
-        fmt.Println("unknown core type")
+        log.Info("unknown core type")
         return
     }
+
+    node.Start()
 
     //log.Infof("hello, blockchain !!!")
     //blockchain, db, err := initBlockchain()
