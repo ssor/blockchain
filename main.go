@@ -9,10 +9,11 @@ import (
     log "github.com/sirupsen/logrus"
     "blockchain/miner"
     "blockchain/wallet"
+    "blockchain/db"
 )
 
 var targetInt uint = 254
-//var dbPath = "my.db"
+var dbPath = "my.db"
 
 const (
     nodeTypeCore   = "core"
@@ -65,6 +66,13 @@ func main() {
 
     config, err := readConfig()
     if err != nil {
+        log.Println("config file error: ", err)
+        return
+    }
+
+    err = db.Init(dbPath)
+    if err != nil {
+        log.Println("init db error: ", err)
         return
     }
 
