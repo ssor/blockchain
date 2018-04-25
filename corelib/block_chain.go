@@ -2,7 +2,6 @@ package corelib
 
 import (
 	"fmt"
-	"github.com/boltdb/bolt"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -18,25 +17,14 @@ var (
 	blockchainLogger = log.WithFields(log.Fields{
 		"file_name": "block_chain",
 	})
-
 )
-
-type BlockchainDB interface {
-	Update(func(tx *bolt.Tx) error) error
-	View(func(tx *bolt.Tx) error) error
-}
-
-type Store interface {
-	Put([]byte, []byte) error
-	Get([]byte) []byte
-}
 
 type Blockchain struct {
 	targetBits uint
-	db         BlockchainDB
+	db        boltDB
 }
 
-func NewBlockchain(targetBits uint, db BlockchainDB, address string) (*Blockchain, error) {
+func NewBlockchain(targetBits uint, db boltDB, address string) (*Blockchain, error) {
 	bc := &Blockchain{
 		targetBits: targetBits,
 		db:         db,
@@ -46,7 +34,7 @@ func NewBlockchain(targetBits uint, db BlockchainDB, address string) (*Blockchai
 }
 
 func (bc *Blockchain) init(address string) error {
-	err := bc.db.Update(func(tx *bolt.Tx) error {
+	err := bc.db.Update(func(tx boltTx) error {
 		bucket, err := tx.CreateBucketIfNotExists([]byte(blocksBucket))
 		if err != nil {
 			blockchainLogger.Error("### create bucket error: %s\n", err)
@@ -104,7 +92,7 @@ func (bc *Blockchain) addBlockToDB(block *Block, store Store) error {
 
 func (bc *Blockchain) getBlock(hash []byte) (*Block, error) {
 	var blockRaw []byte
-	err := bc.db.View(func(tx *bolt.Tx) error {
+	err := bc.db.View(func(tx boltTx) error {
 		bucket := tx.Bucket([]byte(blocksBucket))
 		if bucket == nil {
 			blockchainLogger.Errorf("### bucket [%s] should exists, \n", string(blocksBucket))
@@ -132,7 +120,7 @@ func (bc *Blockchain) getBlock(hash []byte) (*Block, error) {
 }
 func (bc *Blockchain) getCurrentBlockHash() ([]byte, error) {
 	var hash []byte
-	err := bc.db.View(func(tx *bolt.Tx) error {
+	err := bc.db.View(func(tx boltTx) error {
 		bucket := tx.Bucket([]byte(blocksBucket))
 		if bucket == nil {
 			blockchainLogger.Errorf("### bucket [%s] should exists\n", string(blocksBucket))
@@ -174,7 +162,7 @@ func (bc *Blockchain) Add(transactions []*Transaction) error {
 }
 
 func (bc *Blockchain) saveToDB(block *Block) error {
-	err := bc.db.Update(func(tx *bolt.Tx) error {
+	err := bc.db.Update(func(tx boltTx) error {
 		bucket, err := tx.CreateBucketIfNotExists([]byte(blocksBucket))
 		if err != nil {
 			blockchainLogger.Errorf("### create bucket error: %s\n", err)

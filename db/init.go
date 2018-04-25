@@ -5,9 +5,17 @@ import (
     "github.com/boltdb/bolt"
 )
 
-var (
-    LocalDB *bolt.DB
+const (
+    BucketWallet = "wallet"
 )
+
+var (
+    localDB *bolt.DB
+)
+
+func GetDb() *bolt.DB {
+    return localDB
+}
 
 func Init(args ...string) error {
     if args == nil {
@@ -19,7 +27,7 @@ func Init(args ...string) error {
         if err != nil {
             return err
         }
-        LocalDB = db
+        localDB = db
     }
     return nil
 }

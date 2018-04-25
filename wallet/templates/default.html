@@ -3,8 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <title>Wallets</title>
+    <script src="static/js/jquery.js" type="text/javascript"></script>
 </head>
 <body>
 <h1>Wallet List:</h1>
+<script type="text/javascript">
+    $(document).ready(function () {
+        $.get("/wallets", function (data, status) {
+            console.log("wallets: ")
+            console.log(data)
+        })
+    });
+</script>
 </body>
 </html>

@@ -7,16 +7,63 @@ import (
     "crypto/elliptic"
     "crypto/sha256"
     "golang.org/x/crypto/ripemd160"
+    "blockchain/db"
+    "github.com/sirupsen/logrus"
+    "bytes"
+    "encoding/gob"
 )
 
 func GetAllWallets() ([]*Wallet, error) {
     var wallets []*Wallet
+    db.GetDb().View(func(tx boltTx) error {
+        b := tx.Bucket([]byte(db.BucketWallet))
+        if b == nil {
+            return nil
+        }
+        c := b.Cursor()
+        for k, v := c.First(); k != nil; k, v = c.Next() {
+            wallet, err := deserializeWallet(v)
+            if err != nil {
+                return err
+            }
+            wallets = append(wallets, wallet)
+        }
 
+        return nil
+    })
     return wallets, nil
 }
 
 func AddWallet() (*Wallet, error) {
-    return nil, fmt.Errorf("nil wallet")
+    w, err := NewWallet()
+    if err != nil {
+        logrus.Error("create wallet error: ", err)
+        return nil, err
+    }
+    err = db.GetDb().Update(func(tx boltTx) error {
+        bucket, err := tx.CreateBucketIfNotExists([]byte(db.BucketWallet))
+        if err != nil {
+            logrus.Errorf("create wallet bucket error: %s", err)
+            return fmt.Errorf("cannot create db bucket")
+        }
+        bs, err := w.serialize()
+        if err != nil {
+            return err
+        }
+        address, err := w.Address()
+        if err != nil {
+            return err
+        }
+        err = bucket.Put(address, bs)
+        if err != nil {
+            return err
+        }
+        return nil
+    })
+    if err != nil {
+        return nil, err
+    }
+    return w, fmt.Errorf("nil wallet")
 }
 
 func NewWallet() (*Wallet, error) {
@@ -42,10 +89,33 @@ func (wallet *Wallet) Address() ([]byte, error) {
     if err != nil {
         return nil, err
     }
-    versionPrePubHash:=append([]byte{byte(0x00)}, pubHash...)
-    checksumData := checksum(versionPrePubHash,4)
-    all:=append(versionPrePubHash,checksumData...)
+    versionPrePubHash := append([]byte{byte(0x00)}, pubHash...)
+    checksumData := checksum(versionPrePubHash, 4)
+    all := append(versionPrePubHash, checksumData...)
+    return base58Encode(all), nil
+}
 
+func (wallet *Wallet) serialize() ([]byte, error) {
+    var result bytes.Buffer
+    encoder := gob.NewEncoder(&result)
+    err := encoder.Encode(wallet)
+    if err != nil {
+        blockLogger.Errorf("### encode error: %s\n", err)
+        return nil, fmt.Errorf("cannot serialize wallet")
+    }
+    return result.Bytes(), nil
+}
+
+func deserializeWallet(data []byte) (*Wallet, error) {
+    decoder := gob.NewDecoder(bytes.NewReader(data))
+    var wallet Wallet
+    err := decoder.Decode(&wallet)
+    if err != nil {
+        logrus.Errorf("### decode error: %s\n", err)
+        return nil, fmt.Errorf("cannot decode wallet")
+    } else {
+        return &wallet, nil
+    }
 }
 
 func hash160(data []byte) ([]byte, error) {

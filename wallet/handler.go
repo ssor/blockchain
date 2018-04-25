@@ -32,7 +32,13 @@ func wallets(c *gin.Context) {
 }
 
 func addWallet(c *gin.Context) {
-
-    c.JSON(http.StatusOK, nil)
+    wallet, err := corelib.AddWallet()
+    if err != nil {
+        logrus.Error("add new wallet error: ", err)
+        c.JSON(http.StatusOK, nil)
+    } else {
+        logrus.Infof("add a wallet: %s %s", wallet.Address())
+        c.JSON(http.StatusOK, wallet)
+    }
 
 }
