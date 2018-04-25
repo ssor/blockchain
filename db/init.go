@@ -6,7 +6,9 @@ import (
 )
 
 const (
-    BucketWallet = "wallet"
+    BucketWallet       = "wallet"
+    BucketBlocks       = "blocks"
+    BucketLastBlockKey = "l"
 )
 
 var (
