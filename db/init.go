@@ -9,6 +9,7 @@ const (
     BucketWallet       = "wallet"
     BucketBlocks       = "blocks"
     BucketLastBlockKey = "l"
+    //GenesisBlockHash   = "genesis"
 )
 
 var (

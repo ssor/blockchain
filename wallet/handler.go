@@ -37,7 +37,8 @@ func addWallet(c *gin.Context) {
         logrus.Error("add new wallet error: ", err)
         c.JSON(http.StatusOK, nil)
     } else {
-        logrus.Infof("add a wallet: %s %s", wallet.Address())
+        address, _ := wallet.Address()
+        logrus.Info("add a wallet: %s", address)
         c.JSON(http.StatusOK, wallet)
     }
 

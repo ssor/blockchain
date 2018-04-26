@@ -12,8 +12,10 @@ import (
     "blockchain/db"
 )
 
-var targetInt uint = 254
 var dbPath = "my.db"
+
+// use this address as default address of first block
+const genesisAddres = "1GpB1oSj4EBBryYyLUVMoGQPAHUgR5ErFk"
 
 const (
     nodeTypeCore   = "core"
