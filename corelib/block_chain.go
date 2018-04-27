@@ -51,61 +51,67 @@ func BlockchainInitialized() bool {
 }
 
 func (bc *Blockchain) init(address string) error {
-    err := db.GetDb().Update(func(tx boltTx) error {
-        if BlockchainInitialized() == true {
-            return nil
-        }
-        //bucket, err := tx.CreateBucketIfNotExists([]byte(db.BucketBlocks))
-        //if err != nil {
-        //   blockchainLogger.Error("### create bucket error: %s\n", err)
-        //   return fmt.Errorf("cannot create db bucket")
-        //}
-
-        cbtx := NewCoinbaseTX(address, genesisBlockData)
-        genesis := NewGenesisBlock(cbtx)
-        return bc.addBlockToDB(genesis)
-    })
-    if err != nil {
-        return err
+    if BlockchainInitialized() == true {
+        log.Info("chain already init")
+        return nil
     }
-    return nil
+    log.Info("try add genesis block to chain")
+    //bucket, err := tx.CreateBucketIfNotExists([]byte(db.BucketBlocks))
+    //if err != nil {
+    //   blockchainLogger.Error("### create bucket error: %s\n", err)
+    //   return fmt.Errorf("cannot create db bucket")
+    //}
+
+    cbtx := NewCoinbaseTX(address, genesisBlockData)
+    genesis := NewGenesisBlock(cbtx)
+    return bc.addBlockToDB(genesis)
 }
 
 func (bc *Blockchain) addBlockToDB(block *Block) error {
     if block.validate(bc.targetBits) == false {
+        log.Info("taget unvalidate")
         return ErrorInvalidateBlock
     }
 
-    db.GetDb().Batch(func(tx boltTx) error {
-        bucket := tx.Bucket([]byte(db.BucketBlocks))
+    log.Info("try add block to chain")
+    err := db.GetDb().Update(func(tx boltTx) error {
+        bucket, err := tx.CreateBucketIfNotExists([]byte(db.BucketBlocks))
+        if err != nil {
+            blockchainLogger.Error("create bucket %s error: %s\n", db.BucketBlocks, err)
+            return fmt.Errorf("cannot create db bucket")
+        }
         if bucket == nil {
             blockchainLogger.Errorf("### bucket [%s] should exists, \n", string(db.BucketBlocks))
             return fmt.Errorf("cannot find bucket")
         }
 
-        bs := bucket.Get(block.Hash)
-        if bs != nil {
+        blockRaw := bucket.Get(block.Hash)
+        if blockRaw != nil {
             blockchainLogger.Info("block already exists")
             return nil
         }
 
         bs, err := block.serialize()
         if err != nil {
-            blockchainLogger.Errorf("### block serialize error: %s\n", err)
+            blockchainLogger.Errorf("block serialize error: %s\n", err)
             return fmt.Errorf("cannot serialize block")
         }
         if err := bucket.Put(block.Hash, bs); err != nil {
-            blockchainLogger.Errorf("### bucket put error: %s\n", err)
+            blockchainLogger.Errorf("bucket put error: %s\n", err)
             return fmt.Errorf("cannot store block data")
         }
+
+        log.Infof("add block %x to chain", block.Hash)
+
         if err := bucket.Put([]byte(db.BucketLastBlockKey), block.Hash); err != nil {
-            blockchainLogger.Errorf("### bucket put error: %s\n", err)
+            blockchainLogger.Errorf("bucket put error: %s\n", err)
             return fmt.Errorf("cannot store last block data")
         }
+
+        blockchainLogger.Infof("current block change to -> %x\n", block.Hash)
         return nil
     })
-    blockchainLogger.Infof("current block change to -> %x\n", block.Hash)
-    return nil
+    return err
 }
 
 func (bc *Blockchain) getBlock(hash []byte) (*Block, error) {

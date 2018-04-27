@@ -3,6 +3,7 @@ package db
 import (
     "fmt"
     "github.com/boltdb/bolt"
+    "github.com/sirupsen/logrus"
 )
 
 const (
@@ -22,16 +23,18 @@ func GetDb() *bolt.DB {
 
 func Init(args ...string) error {
     if args == nil {
-        return fmt.Errorf("no args")
+        return fmt.Errorf("init db failed, no args")
     }
     if len(args) > 0 {
         dbPath := args[0]
         db, err := initLocalDB(dbPath)
         if err != nil {
+            logrus.Error("init db error: ", err)
             return err
         }
         localDB = db
     }
+    logrus.Info("init db success")
     return nil
 }
 
